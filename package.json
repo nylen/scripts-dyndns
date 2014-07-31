@@ -1,0 +1,26 @@
+{
+    "name"        : "scripts-dyndns",
+    "author"      : "James Nylen <jnylen@gmail.com>",
+    "description" : "Scripts that assist with updating a DynDNS hostname",
+    "version"     : "0.0.1",
+    "repository"  : {
+        "type" : "git",
+        "url"  : "https://github.com/nylen/scripts-dyndns"
+    },
+    "bugs" : {
+        "url" : "https://github.com/nylen/scripts-dyndns/issues"
+    },
+    "license"  : "MIT",
+    "keywords" : [
+        "scripts",
+        "dyndns",
+        "dns",
+        "hostname",
+        "domain",
+        "ip"
+    ],
+    "bin" : {
+        "get-external-ip" : "bin/get-external-ip",
+        "update-dyndns"   : "bin/update-dyndns"
+    }
+}

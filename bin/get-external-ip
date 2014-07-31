@@ -1,0 +1,72 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my $verbose = ($#ARGV >= 0 ? $ARGV[0] : 0);
+my $curl_opts = ($verbose ? '-S -s' : '-s');
+
+my $ip_match = '(\d{1,3}\.){3}\d{1,3}';
+
+
+sub msg {
+  my $msg = shift;
+  print STDERR "$msg\n" if $verbose;
+}
+
+
+sub try_urls {
+  my $data = shift;
+  for my $source (@$data) {
+
+    msg "trying '$source->{url}'";
+    my $ip = `curl $curl_opts "$source->{url}"`;
+
+    my $err = $?;
+    if ($err) {
+      msg "curl exited with code $err";
+      next;
+    }
+
+    my $func = $source->{func};
+    $ip = &$func($ip) if defined $func;
+
+    if ($ip !~ /^$ip_match$/) {
+      msg "IP '$ip' is not a valid IP";
+      next;
+    }
+
+    msg "using $source->{url}";
+    return $ip;
+  }
+
+  msg "tried all sources";
+  return 'ERROR_GETTING_IP';
+}
+
+
+my $result = try_urls [
+  # { url => "http://automation.whatismyip.com/n09230945.asp" },
+  { url => "http://www.robvanderwoude.com/wanip.php" },
+  {
+    url => "http://ipchicken.com/",
+    func => sub {
+      # Shell equivalent:
+      # curl -s "http://ipchicken.com/" \
+      #   | grep -B1 'Add to Favorites' \
+      #   | grep -Eo '([0-9]+\.){3}[0-9]+' \
+      #   | tr -d '\r\n'
+      my $last;
+      for (split /[\r\n]+/, shift) {
+        if (/Add to Favorites/) {
+          $last =~ /($ip_match)/;
+          return $1;
+        }
+        $last = $_;
+      }
+    }
+  },
+];
+
+chomp $result;
+chomp $result;
+print $result;
