@@ -1,0 +1,60 @@
+#!/usr/bin/perl -w
+
+use strict;
+use Getopt::Long::Descriptive;
+use LWP::UserAgent;
+use Net::DNS::Resolver;
+
+my ($opt, $usage) = describe_options('%c %o',
+  ['verbose|v',    'Show debug output'],
+  ['username|u=s', 'DynDNS username',  { required => 1 }],
+  ['password|p=s', 'DynDNS password',  { required => 1 }],
+  ['ip|i=s',       'New IP address'],
+  ['domain|d=s',   'Domain to update', { required => 1 }],
+  ['help|h|?',     'Show usage information']
+);
+
+print $usage->text and exit if $opt->help;
+
+if ($opt->ip !~ /^([0-9]+\.){3}[0-9]+$/m) {
+  die "Bad IP address given to $0: '$opt->{ip}'\n";
+}
+
+# check if current IP is correct
+my $resolver = Net::DNS::Resolver->new(
+  nameservers => [qw(4.2.2.2 4.2.2.3 8.8.8.8)]
+);
+my $query = $resolver->query($opt->domain);
+die "DNS lookup for '$opt->{domain}' failed\n" if !defined $query;
+
+my $current_ip = undef;
+
+foreach my $rr ($query->answer) {
+  next unless $rr->type eq 'A';
+  $current_ip = $rr->address;
+  last;
+}
+die "DNS lookup for '$opt->{domain}' failed\n" if !defined $current_ip;
+
+if ($current_ip eq $opt->ip) {
+  print "IP ($current_ip) is correct; exiting\n" if $opt->verbose;
+  exit(0);
+}
+
+my $ua = LWP::UserAgent->new;
+$ua->agent('Nylen DynDNS updater 0.1');
+
+my $req = HTTP::Request->new(
+  GET => "https://members.dyndns.org/nic/update?hostname=$opt->{domain}&myip=$opt->{ip}");
+$req->authorization_basic($opt->username, $opt->password);
+
+my $result = $ua->request($req)->content;
+
+my $bad_result = 0;
+/^(good|nochg) / or $bad_result = 1 for split /[\r\n]+/, $result;
+
+if ($bad_result) {
+  print "Bad result from server:\n$result\n";
+} elsif ($opt->verbose) {
+  print "Result from server:\n$result\n";
+}
