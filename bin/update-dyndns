@@ -3,6 +3,7 @@
 use strict;
 use Getopt::Long::Descriptive;
 use LWP::UserAgent;
+use LWP::Protocol::https;
 use Net::DNS::Resolver;
 
 my ($opt, $usage) = describe_options('%c %o',
@@ -52,6 +53,7 @@ my $result = $ua->request($req)->content;
 
 my $bad_result = 0;
 /^(good|nochg) / or $bad_result = 1 for split /[\r\n]+/, $result;
+$bad_result = 1 if ! $result;
 
 if ($bad_result) {
   print "Bad result from server:\n$result\n";
