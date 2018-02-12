@@ -46,6 +46,19 @@ sub try_urls {
 
 my $result = try_urls [
   # { url => "http://automation.whatismyip.com/n09230945.asp" },
+  {
+    url => "https://ipinfo.io/json",
+    func => sub {
+      # Shell equivalent:
+      # curl -s "https://ipinfo.io/json" \
+      #   | grep '"ip":' \
+      #   | grep -Eo '([0-9]+\.){3}[0-9]+' \
+      #   | tr -d '\r\n'
+      for (split /[\r\n]+/, shift) {
+        /"ip": "($ip_match)"/ and return $1;
+      }
+    }
+  },
   { url => "http://www.robvanderwoude.com/wanip.php" },
   {
     url => "http://ipchicken.com/",
