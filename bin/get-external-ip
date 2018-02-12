@@ -83,3 +83,7 @@ my $result = try_urls [
 chomp $result;
 chomp $result;
 print $result;
+
+if ( -t 1 ) {
+  print "\n";
+}
